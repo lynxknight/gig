@@ -1,0 +1,4 @@
+package: github.com/lynxknight/gig
+import:
+- package: github.com/mattn/go-isatty
+  version: v0.0.3
