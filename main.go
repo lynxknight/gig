@@ -1,10 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
+
+	"github.com/lynxknight/gig/distance"
 
 	"github.com/mattn/go-isatty"
 )
@@ -41,6 +45,23 @@ func exactMatch(target string, branches []string) bool {
 	return false
 }
 
+func showLev(target string, branches []string) {
+	type container struct {
+		name string
+		cost int
+	}
+	icb := make([]container, len(branches))
+	for i, branch := range branches {
+		icb[i] = container{branch, distance.Distance(target, branch)}
+	}
+	sort.Slice(icb, func(i, j int) bool {
+		return icb[i].cost < icb[j].cost
+	})
+	for _, cont := range icb {
+		fmt.Println(cont.name, cont.cost)
+	}
+}
+
 func main() {
 	assureStdoutIsTTY()
 	branches := getBranches()
@@ -52,5 +73,7 @@ func main() {
 		if err != nil {
 			log.Fatalln("Failed to checkout branch")
 		}
+		return
 	}
+	showLev(target, branches)
 }
