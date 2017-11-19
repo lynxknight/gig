@@ -76,11 +76,13 @@ func main() {
 	target := parseArgs()
 	branches := getBranches()
 	if exactMatch(target, branches) {
-		out, err := exec.Command("git", "checkout", target).Output()
+		gcheckout := exec.Command("git", "checkout", target)
+		out, err := gcheckout.Output()
+		fmt.Println(out)
 		if err != nil {
-			log.Fatalln("Failed to checkout branch")
+			fmt.Println(string(err.(*exec.ExitError).Stderr))
+			log.Fatalln("Failed to checkout branch, reason:", err)
 		}
-		fmt.Print(out)
 		return
 	}
 	showLev(target, branches)
