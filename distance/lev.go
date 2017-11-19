@@ -21,15 +21,14 @@ func min(ints ...int) int {
 // 	fmt.Printf("\n")
 // }
 
-type dckey struct {
+type mkey struct {
 	a1, a2 int
 }
 
-var dcache map[dckey]int
-
-func distance(i, j int, s1, s2 *string) int {
+func distance(i, j int, s1, s2 *string, matrix map[mkey]int) int {
 	// RD += 1
-	v, ok := dcache[dckey{i, j}]
+	key := mkey{i, j}
+	v, ok := matrix[key]
 	if ok {
 		// RDBG("RETURN i=%v j=%v FROM CHACHE answer=%v", i, j, v)
 		// RD -= 1
@@ -67,21 +66,21 @@ func distance(i, j int, s1, s2 *string) int {
 		return ne
 	}
 	// RDBG("MOVE UP")
-	a1 := distance(i, j-1, s1, s2) + 1
+	a1 := distance(i, j-1, s1, s2, matrix) + 1
 	// RDBG("MOVE LEFT")
-	a2 := distance(i-1, j, s1, s2) + 1
+	a2 := distance(i-1, j, s1, s2, matrix) + 1
 	// RDBG("MOVE UP-LEFT")
-	a3 := distance(i-1, j-1, s1, s2) + ne
+	a3 := distance(i-1, j-1, s1, s2, matrix) + ne
 	// RDBG("[considering those for min: %v; %v; %v;", a1, a2, a3)
 	res := min(a1, a2, a3)
 	// RDBG("RETURN RES for i=%v; j=%v; RES=%v", i, j, res)
 	// RD -= 1
-	dcache[dckey{i, j}] = res
+	matrix[key] = res
 	return res
 }
 
 // Distance calculates Levenshtein distance between s1 and s2
 func Distance(s1, s2 string) int {
-	dcache = make(map[dckey]int)
-	return distance(len(s1)-1, len(s2)-1, &s1, &s2)
+	matrix := make(map[mkey]int)
+	return distance(len(s1)-1, len(s2)-1, &s1, &s2, matrix)
 }
