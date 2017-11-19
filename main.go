@@ -20,6 +20,18 @@ func assureStdoutIsTTY() {
 	}
 }
 
+func parseArgs() string {
+	argc := len(os.Args)
+	if argc > 2 {
+		fmt.Println("Usage:", os.Args[0], "[branch]")
+		os.Exit(1)
+	}
+	if argc == 2 {
+		return os.Args[1]
+	}
+	return ""
+}
+
 func getBranches() []string {
 	gbOutput, err := exec.Command(
 		"git", "branch",
@@ -30,15 +42,12 @@ func getBranches() []string {
 		panic(err)
 	}
 	branches := strings.Split(string(gbOutput), "\n")
-	log.Println("Got", len(branches), "branches")
 	return branches
 }
 
 func exactMatch(target string, branches []string) bool {
 	for _, branch := range branches {
-		log.Println("Checkin if", branch, "is equal to", target)
 		if branch == target {
-			log.Println("Exact match on", target)
 			return true
 		}
 	}
@@ -64,15 +73,14 @@ func showLev(target string, branches []string) {
 
 func main() {
 	assureStdoutIsTTY()
+	target := parseArgs()
 	branches := getBranches()
-	target := os.Args[1]
-	log.Println("Target:", target)
 	if exactMatch(target, branches) {
-		log.Println("Checking out", target)
-		_, err := exec.Command("git", "checkout", target).Output()
+		out, err := exec.Command("git", "checkout", target).Output()
 		if err != nil {
 			log.Fatalln("Failed to checkout branch")
 		}
+		fmt.Print(out)
 		return
 	}
 	showLev(target, branches)
