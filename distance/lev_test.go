@@ -11,62 +11,46 @@ func TestMin(t *testing.T) {
 	}
 }
 
-func TestDistanceEqualStringsLengthOne(t *testing.T) {
-	if d := Distance("A", "A"); d != 0 {
-		t.Errorf("'A' and 'A' should have distance of 0, got: %v", d)
+type levTest struct {
+	s1, s2    string
+	edistance int
+}
+
+var testCases = []levTest{
+	levTest{s1: "A", s2: "A", edistance: 0},
+	levTest{s1: "A", s2: "B", edistance: 1},
+	levTest{s1: "A", s2: "AB", edistance: 1},
+	levTest{s1: "AA", s2: "AB", edistance: 1},
+	levTest{s1: "AAA", s2: "AAB", edistance: 1},
+	levTest{s1: "AAA", s2: "B", edistance: 3},
+	levTest{s1: "AAAA", s2: "B", edistance: 4},
+	levTest{s1: "kitten", s2: "sitting", edistance: 3},
+	levTest{s1: "saturday", s2: "sunday", edistance: 3},
+	levTest{s1: "exponential", s2: "polynomial", edistance: 6},
+}
+
+func TestDistance(t *testing.T) {
+	for _, test := range testCases {
+		if d := Distance(test.s1, test.s2); d != test.edistance {
+			t.Errorf(
+				"'%v' and '%v' should have distance of %v, got: %v",
+				test.s1, test.s2, test.edistance, d,
+			)
+		}
+		t.Logf(
+			"[PASSED] s1=%v s2=%v edistance=%v",
+			test.s1, test.s2, test.edistance,
+		)
 	}
 }
 
-func TestDistanceLengthOneReplacement(t *testing.T) {
-	if d := Distance("A", "B"); d != 1 {
-		t.Errorf("'A' and 'B' should have distance of 1, got: %v", d)
-	}
-}
-
-func TestDistanceAddition(t *testing.T) {
-	if d := Distance("A", "AB"); d != 1 {
-		t.Errorf("'A' and 'AB' should have distance of 1, got: %v", d)
-	}
-}
-
-func TestDistanceAdditionLengthTwo(t *testing.T) {
-	if d := Distance("AA", "AB"); d != 1 {
-		t.Errorf("'A' and 'AB' should have distance of 1, got: %v", d)
-	}
-}
-
-func TestDistanceReplacement(t *testing.T) {
-	if d := Distance("AAA", "AAB"); d != 1 {
-		t.Errorf("'A' and 'AB' should have distance of 1, got: %v", d)
-	}
-}
-
-func Test12(t *testing.T) {
-	if d := Distance("AAA", "B"); d != 3 {
-		t.Errorf("'A' and 'AB' should have distance of 3, got: %v", d)
-	}
-}
-
-func Test13(t *testing.T) {
-	if d := Distance("AAAA", "B"); d != 4 {
-		t.Errorf("'A' and 'AB' should have distance of 4, got: %v", d)
-	}
-}
-
-func TestWiki(t *testing.T) {
-	if d := Distance("EXPONENTIAL", "POLYNOMIAL"); d != 6 {
-		t.Errorf("'A' and 'AB' should have distance of 6, got: %v", d)
-	}
-}
-
-func TestWiki2(t *testing.T) {
-	if d := Distance("kitten", "sitting"); d != 3 {
-		t.Errorf("'A' and 'AB' should have distance of 3, got: %v", d)
-	}
-}
-
-func TestWiki3(t *testing.T) {
-	if d := Distance("saturday", "sunday"); d != 3 {
-		t.Errorf("'A' and 'AB' should have distance of 3, got: %v", d)
-	}
-}
+// In case of troubles with some test
+// func TestSpecificCase(t *testing.T) {
+// 	test := levTest{s1: "saturday", s2: "sunday", edistance: 3}
+// 	if d := Distance(test.s1, test.s2); d != test.edistance {
+// 		t.Errorf(
+// 			"'%v' and '%v' should have distance of %v, got: %v",
+// 			test.s1, test.s2, test.edistance, d,
+// 		)
+// 	}
+// }
