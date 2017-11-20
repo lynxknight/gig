@@ -54,15 +54,11 @@ func main() {
 }
 
 func pickBranch(target string, branches []branch) branch {
-	// buffer contains querystring
-	var buffer bytes.Buffer
+	var buffer bytes.Buffer // buffer contains querystring
 	buffer.WriteString(target)
-	// cursorpos stores current menu position
-	cursorpos := 0
-	fmt.Println()
-	displayBranches(branches, cursorpos)
-	// Enter REPL
-	for {
+	cursorpos := 0 // cursorpos stores current menu position
+	drawUI(branches, buffer.String(), cursorpos)
+	for { // REPL
 		ascii, keyCode, _ := getChar()
 		if keyCode != 0 {
 			switch keyCode {
@@ -94,10 +90,8 @@ func pickBranch(target string, branches []branch) branch {
 				buffer.WriteString(char)
 			}
 		}
-		clearScreen()
-		fmt.Println(buffer.String())
 		sortBranches(branches, buffer.String())
-		displayBranches(branches, cursorpos)
+		drawUI(branches, buffer.String(), cursorpos)
 	}
 }
 

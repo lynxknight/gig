@@ -9,6 +9,12 @@ import (
 
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
 
+func drawUI(branches []branch, query string, cursorpos int) {
+	clearScreen()
+	fmt.Println(query)
+	displayBranches(branches, cursorpos)
+}
+
 func displayBranches(branches []branch, cursorpos int) {
 	var name string
 	for index, branch := range branches {
