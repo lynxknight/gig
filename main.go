@@ -102,11 +102,14 @@ func sortBranches(branches []branch, query string) {
 		})
 		return
 	}
-	for i := range branches {
-		branches[i].cost = distance.Distance(branches[i].name, query)
+	// Calculate distance for querystring if we have not done it yet
+	if _, ok := branches[0].costcache[query]; !ok {
+		for i := range branches {
+			branches[i].costcache[query] = distance.Distance(query, branches[i].name)
+		}
 	}
 	sort.Slice(branches, func(i, j int) bool {
-		return branches[i].cost < branches[j].cost
+		return branches[i].costcache[query] < branches[j].costcache[query]
 	})
 
 }

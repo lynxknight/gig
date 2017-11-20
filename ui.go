@@ -12,6 +12,7 @@ var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
 func drawUI(branches []branch, query string, cursorpos int) {
 	clearScreen()
 	fmt.Println(query)
+	fmt.Println("============")
 	displayBranches(branches, cursorpos)
 }
 

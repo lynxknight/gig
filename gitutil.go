@@ -10,7 +10,7 @@ import (
 type branch struct {
 	name      string
 	timestamp int
-	cost      int // TODO: we can store costs of previous querystrings
+	costcache map[string]int
 }
 
 func getBranches() []branch {
@@ -31,7 +31,7 @@ func getBranches() []branch {
 		branches[i] = branch{
 			name:      splitted[0],
 			timestamp: timestamp,
-			cost:      0,
+			costcache: make(map[string]int),
 		}
 	}
 	return branches
