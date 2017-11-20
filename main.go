@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"sort"
-	"strings"
 
 	"github.com/lynxknight/gig/distance"
 
-	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
-	"github.com/pkg/term"
 )
 
 func assureStdoutIsTTY() {
@@ -35,63 +31,13 @@ func parseArgs() string {
 	return ""
 }
 
-func getBranches() []string {
-	gbOutput, err := exec.Command(
-		"git", "branch",
-		"--sort", "-committerdate",
-		"--format", "%(refname:short)",
-	).Output()
-	if err != nil {
-		panic(err)
-	}
-	branches := strings.Split(string(gbOutput), "\n")
-	branches = branches[:len(branches)-1] // Strip last space
-	return branches
-}
-
-func checkoutBranch(branch string) {
-	gcheckout := exec.Command("git", "checkout", branch) // TO AFRAID TO CHECKOUT
-	out, err := gcheckout.Output()
-	fmt.Println(string(out))
-	if err != nil {
-		fmt.Println(string(err.(*exec.ExitError).Stderr))
-		log.Fatalln("Failed to checkout branch, reason:", err)
-	}
-}
-
-func exactMatch(target string, branches []string) bool {
+func exactMatch(target string, branches []branch) bool {
 	for _, branch := range branches {
-		if branch == target {
+		if branch.name == target {
 			return true
 		}
 	}
 	return false
-}
-
-func showLev(target string, branches []string, highlight int) string {
-	choice := ""
-	type container struct {
-		name string
-		cost int
-	}
-	icb := make([]container, len(branches))
-	for i, branch := range branches {
-		icb[i] = container{branch, distance.Distance(target, branch)}
-	}
-
-	if target != "" {
-		sort.Slice(icb, func(i, j int) bool {
-			return icb[i].cost < icb[j].cost
-		})
-	}
-	if highlight > -1 && highlight < len(branches) {
-		choice = icb[highlight].name
-		icb[highlight].name = color.New(color.BgWhite, color.FgBlack).SprintfFunc()("%v", icb[highlight].name)
-	}
-	for _, cont := range icb {
-		fmt.Println(cont.name)
-	}
-	return choice
 }
 
 func main() {
@@ -99,22 +45,25 @@ func main() {
 	target := parseArgs()
 	branches := getBranches()
 	if !exactMatch(target, branches) {
-		target = pickBranch(target, branches)
+		target = pickBranch(target, branches).name
 	}
-	checkoutBranch(target)
+	if err := checkoutBranch(target); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
-func pickBranch(target string, branches []string) string {
-	var choice string
+func pickBranch(target string, branches []branch) branch {
+	// buffer contains querystring
 	var buffer bytes.Buffer
 	buffer.WriteString(target)
+	// cursorpos stores current menu position
 	cursorpos := 0
-	current := target
-	choice = showLev(current, branches, cursorpos)
+	fmt.Println()
+	displayBranches(branches, cursorpos)
 	// Enter REPL
 	for {
 		ascii, keyCode, _ := getChar()
-		fmt.Println(ascii, keyCode)
 		if keyCode != 0 {
 			switch keyCode {
 			case 38: // Up
@@ -129,16 +78,12 @@ func pickBranch(target string, branches []string) string {
 		} else {
 			switch ascii {
 			case 13: // <CR>
-				fmt.Println("RETURN")
-				return choice
+				return branches[cursorpos]
 			case 3: // ctrl-c
-				fmt.Println("INTERRUPT")
 				os.Exit(1)
 			case 4: // ctrl-d
-				fmt.Println("EOF")
 				os.Exit(0)
 			case 127: // backspace
-				fmt.Println("EOF")
 				if buffer.Len() > 0 {
 					buffer.Truncate(buffer.Len() - 1)
 				}
@@ -148,53 +93,26 @@ func pickBranch(target string, branches []string) string {
 				char := string(ascii)
 				buffer.WriteString(char)
 			}
-			fmt.Println(ascii)
 		}
-
 		clearScreen()
-		current = buffer.String()
-		fmt.Println(current)
-		choice = showLev(current, branches, cursorpos)
+		fmt.Println(buffer.String())
+		sortBranches(branches, buffer.String())
+		displayBranches(branches, cursorpos)
 	}
 }
-func clearScreen() {
-	print("\033[H\033[2J")
-}
 
-func getChar() (ascii int, keyCode int, err error) {
-	t, _ := term.Open("/dev/tty")
-	term.RawMode(t)
-	bytes := make([]byte, 3)
-
-	var numRead int
-	numRead, err = t.Read(bytes)
-	if err != nil {
+func sortBranches(branches []branch, query string) {
+	if query == "" { // Sort by date
+		sort.Slice(branches, func(i, j int) bool {
+			return branches[i].timestamp > branches[j].timestamp
+		})
 		return
 	}
-	if numRead == 3 && bytes[0] == 27 && bytes[1] == 91 {
-		// Three-character control sequence, beginning with "ESC-[".
-
-		// Since there are no ASCII codes for arrow keys, we use
-		// Javascript key codes.
-		if bytes[2] == 65 {
-			// Up
-			keyCode = 38
-		} else if bytes[2] == 66 {
-			// Down
-			keyCode = 40
-		} else if bytes[2] == 67 {
-			// Right
-			keyCode = 39
-		} else if bytes[2] == 68 {
-			// Left
-			keyCode = 37
-		}
-	} else if numRead == 1 {
-		ascii = int(bytes[0])
-	} else {
-		// Two characters read??
+	for i := range branches {
+		branches[i].cost = distance.Distance(branches[i].name, query)
 	}
-	t.Restore()
-	t.Close()
-	return
+	sort.Slice(branches, func(i, j int) bool {
+		return branches[i].cost < branches[j].cost
+	})
+
 }
