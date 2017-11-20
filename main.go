@@ -74,8 +74,10 @@ func pickBranch(target string, branches []branch) branch {
 		} else {
 			switch ascii {
 			case 13: // <CR>
+				clearScreen()
 				return branches[cursorpos]
 			case 3: // ctrl-c
+				clearScreen()
 				os.Exit(1)
 			case 4: // ctrl-d
 				os.Exit(0)
@@ -96,12 +98,6 @@ func pickBranch(target string, branches []branch) branch {
 }
 
 func sortBranches(branches []branch, query string) {
-	if query == "" { // Sort by date
-		sort.Slice(branches, func(i, j int) bool {
-			return branches[i].timestamp > branches[j].timestamp
-		})
-		return
-	}
 	// Calculate distance for querystring if we have not done it yet
 	if _, ok := branches[0].costcache[query]; !ok {
 		for i := range branches {

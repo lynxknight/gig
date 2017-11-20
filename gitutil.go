@@ -9,7 +9,6 @@ import (
 
 type branch struct {
 	name      string
-	timestamp int
 	costcache map[string]int
 }
 
@@ -28,17 +27,18 @@ func getBranches() []branch {
 	for i := 0; i < len(rawBranches)-1; i++ {
 		splitted := strings.Split(rawBranches[i], "|")
 		timestamp, _ := strconv.Atoi(splitted[1])
+		costcache := make(map[string]int)
+		costcache[""] = timestamp // Empty querystring = sort by date
 		branches[i] = branch{
 			name:      splitted[0],
-			timestamp: timestamp,
-			costcache: make(map[string]int),
+			costcache: costcache,
 		}
 	}
 	return branches
 }
 
 func checkoutBranch(branch string) error {
-	gcheckout := exec.Command("git", "checkout", branch) // TO AFRAID TO CHECKOUT
+	gcheckout := exec.Command("git", "checkout", branch)
 	out, err := gcheckout.Output()
 	if err != nil {
 		return fmt.Errorf(string(err.(*exec.ExitError).Stderr))
