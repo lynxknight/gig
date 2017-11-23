@@ -79,8 +79,8 @@ func distance(i, j int, s1, s2 *string, matrix map[mkey]int) int {
 	return res
 }
 
-// Distance calculates Levenshtein distance between s1 and s2
-func Distance(s1, s2 string) int {
+// LevenshteinDistance calculates Levenshtein distance between s1 and s2
+func LevenshteinDistance(s1, s2 string) int {
 	matrix := make(map[mkey]int)
 	return distance(len(s1)-1, len(s2)-1, &s1, &s2, matrix)
 }

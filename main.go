@@ -57,6 +57,7 @@ func pickBranch(target string, branches []branch) branch {
 	var buffer bytes.Buffer // buffer contains querystring
 	buffer.WriteString(target)
 	cursorpos := 0 // cursorpos stores current menu position
+	sortBranches(branches, buffer.String())
 	drawUI(branches, buffer.String(), cursorpos)
 	for { // REPL
 		ascii, keyCode, _ := getChar()
@@ -101,7 +102,7 @@ func sortBranches(branches []branch, query string) {
 	// Calculate distance for querystring if we have not done it yet
 	if _, ok := branches[0].costcache[query]; !ok {
 		for i := range branches {
-			branches[i].costcache[query] = distance.Distance(query, branches[i].name)
+			branches[i].costcache[query] = distance.LevenshteinDistance(query, branches[i].name)
 		}
 	}
 	sort.Slice(branches, func(i, j int) bool {
