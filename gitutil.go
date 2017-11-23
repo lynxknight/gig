@@ -14,9 +14,9 @@ type branch struct {
 
 func getBranches() []branch {
 	gbOutput, err := exec.Command(
-		"git", "branch",
-		"--sort", "-committerdate",
+		"git", "for-each-ref",
 		"--format", "%(refname:short)|%(creatordate:unix)",
+		"refs/heads/",
 	).Output()
 	if err != nil {
 		panic(err)
@@ -28,7 +28,7 @@ func getBranches() []branch {
 		splitted := strings.Split(rawBranches[i], "|")
 		timestamp, _ := strconv.Atoi(splitted[1])
 		costcache := make(map[string]int)
-		costcache[""] = timestamp // Empty querystring = sort by date
+		costcache[""] = -timestamp // Empty querystring = sort by date
 		branches[i] = branch{
 			name:      splitted[0],
 			costcache: costcache,
