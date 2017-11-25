@@ -31,7 +31,7 @@ var testCases = []levTest{
 
 func TestDistance(t *testing.T) {
 	for _, test := range testCases {
-		if d := Distance(test.s1, test.s2); d != test.edistance {
+		if d := levenshteinDistance(test.s1, test.s2); d != test.edistance {
 			t.Errorf(
 				"'%v' and '%v' should have distance of %v, got: %v",
 				test.s1, test.s2, test.edistance, d,

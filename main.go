@@ -102,7 +102,7 @@ func sortBranches(branches []branch, query string) {
 	// Calculate distance for querystring if we have not done it yet
 	if _, ok := branches[0].costcache[query]; !ok {
 		for i := range branches {
-			branches[i].costcache[query] = distance.LevenshteinDistance(query, branches[i].name)
+			branches[i].costcache[query] = distance.GetScore(branches[i].name, query)
 		}
 	}
 	sort.Slice(branches, func(i, j int) bool {
