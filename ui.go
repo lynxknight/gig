@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/fatih/color"
 	"github.com/pkg/term"
@@ -28,37 +29,71 @@ func displayBranches(branches []branch, cursorpos int) {
 	}
 }
 
-func getChar() (ascii int, keyCode int, err error) {
-	t, _ := term.Open("/dev/tty")
-	term.RawMode(t)
-	bytes := make([]byte, 3)
+type MGMT int
 
-	var numRead int
-	numRead, err = t.Read(bytes)
+const ( // Do not handle a lot of stuff since there is no cursor concept
+	MGMT_TEXT MGMT = iota
+
+	MGMT_CR
+
+	MGMT_ARROW_UP
+	MGMT_ARROW_DOWN
+
+	MGMT_CTRL_C
+	MGMT_CTRL_D
+	MGMT_CTRL_W
+
+	MGMT_BACKSPACE
+)
+
+type termInput struct {
+	rawValue []byte
+	mgmt     MGMT
+}
+
+// getTermInput normally returns parsed termInput, upon unknown stuff returns
+// error
+func getTermInput() (result termInput, err error) {
+	numRead, bytes, err := readTerm()
 	if err != nil {
-		return
+		return result, err
 	}
+	result.rawValue = bytes[:numRead]
 	if numRead == 3 && bytes[0] == 27 && bytes[1] == 91 {
 		// Three-character control sequence, beginning with "ESC-[".
 		// Since there are no ASCII codes for arrow keys, we use
 		// Javascript key codes.
 		if bytes[2] == 65 {
-			// Up
-			keyCode = 38
+			result.mgmt = MGMT_ARROW_UP
 		} else if bytes[2] == 66 {
-			// Down
-			keyCode = 40
-		} else if bytes[2] == 67 {
-			// Right
-			keyCode = 39
-		} else if bytes[2] == 68 {
-			// Left
-			keyCode = 37
+			result.mgmt = MGMT_ARROW_DOWN
 		}
 	} else if numRead == 1 {
-		ascii = int(bytes[0])
-	} else {
-		// Two characters read??
+		ascii := int(bytes[0])
+		switch ascii {
+		case 3:
+			result.mgmt = MGMT_CTRL_C
+		case 4:
+			result.mgmt = MGMT_CTRL_D
+			os.Exit(0)
+		case 13:
+			result.mgmt = MGMT_CR
+		case 23:
+			result.mgmt = MGMT_CTRL_W
+		case 127:
+			result.mgmt = MGMT_BACKSPACE
+		}
+	}
+	return result, nil
+}
+
+func readTerm() (numRead int, bytes []byte, err error) {
+	t, _ := term.Open("/dev/tty")
+	term.RawMode(t)
+	bytes = make([]byte, 140)
+	numRead, err = t.Read(bytes)
+	if err != nil {
+		return
 	}
 	t.Restore()
 	t.Close()
@@ -66,5 +101,8 @@ func getChar() (ascii int, keyCode int, err error) {
 }
 
 func clearScreen() {
+	if os.Getenv("NOCLEAR") == "1" {
+		return
+	}
 	print("\033[H\033[2J")
 }

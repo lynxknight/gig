@@ -60,39 +60,32 @@ func pickBranch(target string, branches []branch) branch {
 	sortBranches(branches, buffer.String())
 	drawUI(branches, buffer.String(), cursorpos)
 	for { // REPL
-		ascii, keyCode, _ := getChar()
-		if keyCode != 0 {
-			switch keyCode {
-			case 38: // Up
-				if cursorpos > 0 {
-					cursorpos--
-				}
-			case 40: // Down
-				if cursorpos < len(branches)-1 {
-					cursorpos++
-				}
+		input, _ := getTermInput()
+		switch input.mgmt {
+		case MGMT_ARROW_UP: // Up
+			if cursorpos > 0 {
+				cursorpos--
 			}
-		} else {
-			switch ascii {
-			case 13: // <CR>
-				clearScreen()
-				return branches[cursorpos]
-			case 3: // ctrl-c
-				clearScreen()
-				os.Exit(1)
-			case 4: // ctrl-d
-				os.Exit(0)
-			case 127: // backspace
-				if buffer.Len() > 0 {
-					buffer.Truncate(buffer.Len() - 1)
-				}
-			case 23: // ctrl-w
-				buffer.Truncate(0)
-			default:
-				char := string(ascii)
-				buffer.WriteString(char)
+		case MGMT_ARROW_DOWN: // Up
+			if cursorpos < len(branches)-1 {
+				cursorpos++
 			}
+		case MGMT_CTRL_W:
+			buffer.Truncate(0)
+		case MGMT_CTRL_C:
+			clearScreen()
+			os.Exit(1)
+		case MGMT_CTRL_D:
+			clearScreen()
+			os.Exit(0)
+		case MGMT_BACKSPACE:
+			if buffer.Len() > 0 {
+				buffer.Truncate(buffer.Len() - 1)
+			}
+		case MGMT_TEXT:
+			buffer.Write(input.rawValue) // TODO: handle errors?
 		}
+		// TODO: sometimes we don't need to resort branches
 		sortBranches(branches, buffer.String())
 		drawUI(branches, buffer.String(), cursorpos)
 	}
