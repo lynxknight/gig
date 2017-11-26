@@ -29,31 +29,31 @@ func displayBranches(branches []branch, cursorpos int) {
 	}
 }
 
-type MGMT int
+type inputType int
 
 const ( // Do not handle a lot of stuff since there is no cursor concept
-	MGMT_TEXT MGMT = iota
+	inputText inputType = iota
 
-	MGMT_CR
+	inputCR
 
-	MGMT_ARROW_UP
-	MGMT_ARROW_DOWN
+	inputArrowUp
+	inputArrowDown
 
-	MGMT_CTRL_C
-	MGMT_CTRL_D
-	MGMT_CTRL_W
+	inputCtrlC
+	inputCtrlD
+	inputCtrlW
 
-	MGMT_BACKSPACE
+	inputBackspace
 )
 
-type termInput struct {
+type userInput struct {
 	rawValue []byte
-	mgmt     MGMT
+	input     inputType
 }
 
-// getTermInput normally returns parsed termInput, upon unknown stuff returns
+// getUserInput normally returns parsed userInput, upon unknown stuff returns
 // error
-func getTermInput() (result termInput, err error) {
+func getUserInput() (result userInput, err error) {
 	numRead, bytes, err := readTerm()
 	if err != nil {
 		return result, err
@@ -64,24 +64,24 @@ func getTermInput() (result termInput, err error) {
 		// Since there are no ASCII codes for arrow keys, we use
 		// Javascript key codes.
 		if bytes[2] == 65 {
-			result.mgmt = MGMT_ARROW_UP
+			result.input = inputArrowUp
 		} else if bytes[2] == 66 {
-			result.mgmt = MGMT_ARROW_DOWN
+			result.input = inputArrowDown
 		}
 	} else if numRead == 1 {
 		ascii := int(bytes[0])
 		switch ascii {
 		case 3:
-			result.mgmt = MGMT_CTRL_C
+			result.input = inputCtrlC
 		case 4:
-			result.mgmt = MGMT_CTRL_D
+			result.input = inputCtrlD
 			os.Exit(0)
 		case 13:
-			result.mgmt = MGMT_CR
+			result.input = inputCR
 		case 23:
-			result.mgmt = MGMT_CTRL_W
+			result.input = inputCtrlW
 		case 127:
-			result.mgmt = MGMT_BACKSPACE
+			result.input = inputBackspace
 		}
 	}
 	return result, nil
