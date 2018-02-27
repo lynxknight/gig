@@ -57,32 +57,6 @@ func getGitRoot() string {
 	return path.Join(cwd, ".git")
 }
 
-func getRefsRec(prefix, dir string) []ref {
-	s := make([]ref, 0)
-	direntries, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Fatalln("Failed to read directory", dir, err)
-	}
-	newPrefix := path.Join(prefix, dir)
-	for _, d := range direntries {
-		if d.IsDir() {
-			s = append(
-				s, getRefsRec(newPrefix, path.Join(newPrefix, d.Name()))...,
-			)
-			continue
-		}
-		s = append(
-			s, ref{name: path.Join(newPrefix, d.Name()), mdate: d.ModTime()},
-		)
-	}
-	return s
-}
-
-func getRefs(gitRoot string) []ref {
-	refsPath := path.Join(gitRoot, "refs", "heads")
-	return getRefsRec("", refsPath)
-}
-
 func getBranches() []branch {
 	// git for-each-ref is unstable across git versions, so we implement it
 	gitRoot := getGitRoot()
@@ -95,7 +69,7 @@ func getBranches() []branch {
 			log.Fatalln("Runtime failed to walk on path", path, err)
 		}
 		if !info.IsDir() {
-			refs = append(refs, ref{name: info.Name(), mdate: info.ModTime()})
+			refs = append(refs, ref{name: path[len(refsPath)+1:], mdate: info.ModTime()})
 		}
 		return nil
 	})

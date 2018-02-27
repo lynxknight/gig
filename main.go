@@ -107,5 +107,4 @@ func sortBranches(branches []branch, query string) {
 	sort.Slice(branches, func(i, j int) bool {
 		return branches[i].costcache[query] < branches[j].costcache[query]
 	})
-
 }

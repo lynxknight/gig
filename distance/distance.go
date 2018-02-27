@@ -99,6 +99,7 @@ func levenshteinScore(s, substr string) int {
 	slen := len(s)
 	sublen := len(substr)
 	if slen < sublen {
+		// TODO: proper debug
 		fmt.Println("slen", slen, "less than substr", sublen, "return base")
 		return base
 	}
