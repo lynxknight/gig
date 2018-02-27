@@ -44,15 +44,17 @@ const ( // Do not handle a lot of stuff since there is no cursor concept
 	inputCtrlW
 
 	inputBackspace
+
+	inputMeta
 )
 
 type userInput struct {
 	rawValue []byte
-	input     inputType
+	input    inputType
 }
 
 // getUserInput normally returns parsed userInput, upon unknown stuff returns
-// error
+// inputMeta (which is not Meta key, but "something I don't know what to do with")
 func getUserInput() (result userInput, err error) {
 	numRead, bytes, err := readTerm()
 	if err != nil {
@@ -60,13 +62,12 @@ func getUserInput() (result userInput, err error) {
 	}
 	result.rawValue = bytes[:numRead]
 	if numRead == 3 && bytes[0] == 27 && bytes[1] == 91 {
-		// Three-character control sequence, beginning with "ESC-[".
-		// Since there are no ASCII codes for arrow keys, we use
-		// Javascript key codes.
 		if bytes[2] == 65 {
 			result.input = inputArrowUp
 		} else if bytes[2] == 66 {
 			result.input = inputArrowDown
+		} else {
+			result.input = inputMeta
 		}
 	} else if numRead == 1 {
 		ascii := int(bytes[0])
@@ -82,7 +83,13 @@ func getUserInput() (result userInput, err error) {
 			result.input = inputCtrlW
 		case 127:
 			result.input = inputBackspace
+		default:
+			if ascii < 32 || ascii > 126 {
+				result.input = inputMeta
+			}
 		}
+	} else {
+		result.input = inputMeta
 	}
 	return result, nil
 }
@@ -105,4 +112,8 @@ func clearScreen() {
 		return
 	}
 	print("\033[H\033[2J")
+}
+
+func moveCursor(line, col int) {
+	fmt.Printf("\033[%d;%dH", line, col)
 }

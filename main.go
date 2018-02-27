@@ -60,13 +60,14 @@ func pickBranch(target string, branches []branch) branch {
 	sortBranches(branches, buffer.String())
 	drawUI(branches, buffer.String(), cursorpos)
 	for { // REPL
+		moveCursor(1, buffer.Len()+1)
 		usrInput, _ := getUserInput()
 		switch usrInput.input {
-		case inputArrowUp: // Up
+		case inputArrowUp:
 			if cursorpos > 0 {
 				cursorpos--
 			}
-		case inputArrowDown: // Up
+		case inputArrowDown:
 			if cursorpos < len(branches)-1 {
 				cursorpos++
 			}
@@ -84,6 +85,11 @@ func pickBranch(target string, branches []branch) branch {
 			}
 		case inputText:
 			buffer.Write(usrInput.rawValue) // TODO: handle errors?
+		case inputCR:
+			clearScreen()
+			return branches[cursorpos]
+		default:
+			continue
 		}
 		// TODO: sometimes we don't need to resort branches
 		sortBranches(branches, buffer.String())
