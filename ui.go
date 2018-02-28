@@ -45,7 +45,7 @@ const ( // Do not handle a lot of stuff since there is no cursor concept
 
 	inputBackspace
 
-	inputMeta
+	inputOther
 )
 
 type userInput struct {
@@ -67,7 +67,7 @@ func getUserInput() (result userInput, err error) {
 		} else if bytes[2] == 66 {
 			result.input = inputArrowDown
 		} else {
-			result.input = inputMeta
+			result.input = inputOther
 		}
 	} else if numRead == 1 {
 		ascii := int(bytes[0])
@@ -85,11 +85,11 @@ func getUserInput() (result userInput, err error) {
 			result.input = inputBackspace
 		default:
 			if ascii < 32 || ascii > 126 {
-				result.input = inputMeta
+				result.input = inputOther
 			}
 		}
 	} else {
-		result.input = inputMeta
+		result.input = inputOther
 	}
 	return result, nil
 }
