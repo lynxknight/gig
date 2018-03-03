@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/fatih/color"
 	"github.com/pkg/term"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
@@ -111,12 +113,11 @@ func readTerm() (numRead int, bytes []byte, err error) {
 }
 
 func getTermHeight() int {
-	return 45
-	// _, h, err := terminal.GetSize(int(os.Stdin.Fd()))
-	// if err != nil {
-	// log.Fatalln("Could not get terminal size")
-	// }
-	// return h
+	_, h, err := terminal.GetSize(int(os.Stdin.Fd()))
+	if err != nil {
+		log.Fatalln("Could not get terminal size")
+	}
+	return h
 }
 
 func clearScreen() {
