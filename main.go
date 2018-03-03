@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/lynxknight/gig/distance"
 
@@ -58,8 +59,11 @@ func pickBranch(target string, branches []branch) branch {
 	buffer.WriteString(target)
 	cursorpos := 0 // cursorpos stores current menu position
 	sortBranches(branches, buffer.String())
-	drawUI(branches, buffer.String(), cursorpos)
+	drawUI(branches, buffer.String(), cursorpos, getTermHeight())
+	// fmt.Println(getTermHeight())
+	// os.Exit(1)
 	for { // REPL
+		resort := true
 		moveCursor(1, buffer.Len()+1)
 		usrInput, _ := getUserInput()
 		switch usrInput.input {
@@ -67,10 +71,12 @@ func pickBranch(target string, branches []branch) branch {
 			if cursorpos > 0 {
 				cursorpos--
 			}
+			resort = false
 		case inputArrowDown:
 			if cursorpos < len(branches)-1 {
 				cursorpos++
 			}
+			resort = false
 		case inputCtrlW:
 			buffer.Truncate(0)
 		case inputCtrlC:
@@ -82,8 +88,11 @@ func pickBranch(target string, branches []branch) branch {
 		case inputBackspace:
 			if buffer.Len() > 0 {
 				buffer.Truncate(buffer.Len() - 1)
+			} else {
+				continue
 			}
 		case inputText:
+			cursorpos = 0
 			buffer.Write(usrInput.rawValue) // TODO: handle errors?
 		case inputCR:
 			clearScreen()
@@ -92,19 +101,37 @@ func pickBranch(target string, branches []branch) branch {
 			continue
 		}
 		// TODO: sometimes we don't need to resort branches
-		sortBranches(branches, buffer.String())
-		drawUI(branches, buffer.String(), cursorpos)
+		if resort {
+			sortBranches(branches, buffer.String())
+		}
+		drawUI(branches, buffer.String(), cursorpos, getTermHeight())
 	}
 }
 
 func sortBranches(branches []branch, query string) {
 	// Calculate distance for querystring if we have not done it yet
+	start := time.Now().UnixNano()
 	if _, ok := branches[0].costcache[query]; !ok {
 		for i := range branches {
 			branches[i].costcache[query] = distance.GetScore(branches[i].name, query)
 		}
 	}
+	start2 := time.Now().UnixNano()
+	cost := start2 - start
 	sort.Slice(branches, func(i, j int) bool {
-		return branches[i].costcache[query] < branches[j].costcache[query]
+		return branches[i].costcache[query] <= branches[j].costcache[query]
 	})
+	sort := time.Now().UnixNano() - start2
+	total := sort + cost
+	moveCursor(2, 0)
+	f, err := os.OpenFile("/tmp/metrix.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0777)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer f.Close()
+	w, err := f.WriteString(fmt.Sprintf("cost: %v; sort: %v; total: %v\n", cost, sort, total))
+	fmt.Println(w)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }

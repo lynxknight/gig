@@ -44,6 +44,21 @@ func TestDistance(t *testing.T) {
 	}
 }
 
+func TestDistanceIterative(t *testing.T) {
+	for _, test := range testCases {
+		if d := levenshteinIterative(test.s1, test.s2); d != test.edistance {
+			t.Errorf(
+				"'%v' and '%v' should have distance of %v, got: %v",
+				test.s1, test.s2, test.edistance, d,
+			)
+		}
+		t.Logf(
+			"[PASSED] s1=%v s2=%v edistance=%v",
+			test.s1, test.s2, test.edistance,
+		)
+	}
+}
+
 // In case of troubles with some test
 // func TestSpecificCase(t *testing.T) {
 // 	test := levTest{s1: "saturday", s2: "sunday", edistance: 3}

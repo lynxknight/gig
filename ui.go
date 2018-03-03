@@ -10,16 +10,19 @@ import (
 
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
 
-func drawUI(branches []branch, query string, cursorpos int) {
+func drawUI(branches []branch, query string, cursorpos, height int) {
 	clearScreen()
 	fmt.Println(query)
 	fmt.Println("============")
-	displayBranches(branches, cursorpos)
+	displayBranches(branches, cursorpos, height)
 }
 
-func displayBranches(branches []branch, cursorpos int) {
+func displayBranches(branches []branch, cursorpos, height int) {
 	var name string
 	for index, branch := range branches {
+		if index+4 > height {
+			break
+		}
 		if cursorpos == index {
 			name = highlighter("%v", branch.name)
 		} else {
@@ -105,6 +108,15 @@ func readTerm() (numRead int, bytes []byte, err error) {
 	t.Restore()
 	t.Close()
 	return
+}
+
+func getTermHeight() int {
+	return 45
+	// _, h, err := terminal.GetSize(int(os.Stdin.Fd()))
+	// if err != nil {
+	// log.Fatalln("Could not get terminal size")
+	// }
+	// return h
 }
 
 func clearScreen() {

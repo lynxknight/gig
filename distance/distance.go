@@ -1,8 +1,8 @@
 package distance
 
 import (
-	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 func min(ints ...int) int {
@@ -99,17 +99,86 @@ func levenshteinScore(s, substr string) int {
 	slen := len(s)
 	sublen := len(substr)
 	if slen < sublen {
-		// TODO: proper debug
-		fmt.Println("slen", slen, "less than substr", sublen, "return base")
 		return base
 	}
 	diffsize := slen - sublen
 	scores := make([]int, diffsize+1)
 	for i := 0; i < diffsize-1; i++ {
-		fmt.Printf("  calculating substr for levenstien %v\n", s[i:i+sublen+1])
 		scores = append(scores, levenshteinDistance(s[i:i+sublen+1], substr))
 	}
 	return base + min(scores...)
+}
+
+func levenscore(str, target string) int {
+	// We could have just computed levenshtein distance, but then "short"
+	// strings would always win over long ones. For example, querying "data-v3"
+	// would yield following result order:
+	// 	  * develop (branch A, not preferrable)
+	// 	  * feature/data_v3-memory-leak (branch B, preferrable)
+	// We failed to find exact match on branch B, so we fallback on calculating
+	// distance, but branch A would yield better score for almost any longer
+	// substring due to its length (i.e. pure replacements will do). To fix this
+	// we try to calculate "best distance between target and substrings of str".
+	//
+	// There are several ways to pick substrings:
+	// 1) Sliding window of length len(target). Pick index X of str, and calculate
+	// distance between str[X:X+len(target)] and target for each X that allows such
+	// window size. Good method, but it lacks perfomance for long strings, so we
+	// need to throw away "looks like bad" windows.
+	//
+	// 2) Search for all "almost occurences" of target[0] in str, let's say it is
+	// str[X], and calculate distance between target and str[X:X+len(target)].
+	// "Almost occurence" between X and Y is a case when either X == Y, or Y is any
+	// of chars that are located near X on the QWERTY keyboard. Almost occurences
+	// for char "h" are "tyugjbnm"
+
+	if len(str) <= len(target) {
+		return levenshteinIterative(str, target)
+	}
+
+	lenDiff := len(str) - len(target)
+	targetStartByte := target[0]
+	typosMaps := GetTyposMaps()
+	scores := make([]int, 0)
+	for bytePos := 0; bytePos < lenDiff; bytePos++ {
+		if str[bytePos] == targetStartByte || typosMaps[targetStartByte][str[bytePos]] {
+			window := str[bytePos : bytePos+len(target)]
+			score := levenshteinIterative(window, target)
+			// fmt.Println(window, score)
+			scores = append(scores, score)
+		}
+	}
+	if len(scores) == 0 {
+		return levenshteinIterative(str, target)
+	}
+	return min(scores...)
+}
+
+func levenshteinIterative(a, b string) int {
+	f := make([]int, utf8.RuneCountInString(b)+1)
+
+	for j := range f {
+		f[j] = j
+	}
+
+	for _, ca := range a {
+		j := 1
+		fj1 := f[0] // fj1 is the value of f[j - 1] in last iteration
+		f[0]++
+		for _, cb := range b {
+			mn := min(f[j]+1, f[j-1]+1) // delete & insert
+			if cb != ca {
+				mn = min(mn, fj1+1) // change
+			} else {
+				mn = min(mn, fj1) // matched
+			}
+
+			fj1, f[j] = f[j], mn // save f[j] to fj1(j is about to increase), update f[j] to mn
+			j++
+		}
+	}
+
+	return f[len(f)-1]
 }
 
 // GetScore finds out how much points does "substr" gain in "s", the lesser
@@ -117,10 +186,13 @@ func levenshteinScore(s, substr string) int {
 // we try to go for "levenshtein" matches
 func GetScore(s, substr string) int {
 	if em := exactMatches(s, substr); em != 0 {
-		fmt.Printf("Exact match found for {%v, %v} = %v\n", s, substr, em)
 		return em * -10
 	}
-	score := levenshteinScore(s, substr)
-	fmt.Printf("Calculating distance for {%v, %v} = %v\n", s, substr, score)
+	score := 0
+	if len(substr) > 3 {
+		score = levenscore(s, substr)
+	} else {
+		score = levenshteinIterative(s, substr)
+	}
 	return score
 }
