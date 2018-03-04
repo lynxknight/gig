@@ -4,11 +4,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/pkg/term"
 	"golang.org/x/crypto/ssh/terminal"
 )
+
+func min(ints ...int) int {
+	m := ints[0]
+	for i := 1; i < len(ints); i++ {
+		if ints[i] < m {
+			m = ints[i]
+		}
+	}
+	return m
+}
 
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
 
@@ -20,18 +31,27 @@ func drawUI(branches []branch, query string, cursorpos, height int) {
 }
 
 func displayBranches(branches []branch, cursorpos, height int) {
-	var name string
-	for index, branch := range branches {
-		if index+4 > height {
-			break
-		}
-		if cursorpos == index {
-			name = highlighter("%v", branch.name)
+	// var name string
+	branchesToPrint := make([]string, min(height-2, len(branches)))
+	for i := range branchesToPrint {
+		if cursorpos == i {
+			branchesToPrint[i] = highlighter("%v", branches[i].name)
 		} else {
-			name = branch.name
+			branchesToPrint[i] = branches[i].name
 		}
-		fmt.Println(name)
 	}
+	fmt.Print(strings.Join(branchesToPrint, "\n"))
+	// for index, branch := range branches {
+	// if index+4 > height {
+	// break
+	// }
+	// if cursorpos == index {
+	// name = highlighter("%v", branch.name)
+	// } else {
+	// name = branch.name
+	// }
+	// fmt.Println(name)
+	// }
 }
 
 type inputType int
@@ -60,8 +80,8 @@ type userInput struct {
 
 // getUserInput normally returns parsed userInput, upon unknown stuff returns
 // inputMeta (which is not Meta key, but "something I don't know what to do with")
-func getUserInput() (result userInput, err error) {
-	numRead, bytes, err := readTerm()
+func getUserInput(terminal *term.Term) (result userInput, err error) {
+	numRead, bytes, err := readTerm(terminal)
 	if err != nil {
 		return result, err
 	}
@@ -99,8 +119,7 @@ func getUserInput() (result userInput, err error) {
 	return result, nil
 }
 
-func readTerm() (numRead int, bytes []byte, err error) {
-	t, _ := term.Open("/dev/tty")
+func readTerm(t *term.Term) (numRead int, bytes []byte, err error) {
 	term.RawMode(t)
 	bytes = make([]byte, 140)
 	numRead, err = t.Read(bytes)
@@ -108,8 +127,16 @@ func readTerm() (numRead int, bytes []byte, err error) {
 		return
 	}
 	t.Restore()
-	t.Close()
 	return
+}
+
+func getTerm() *term.Term {
+	t, err := term.Open("/dev/tty")
+	if err != nil {
+		panic("Failed to open tty device")
+	}
+	return t
+
 }
 
 func getTermHeight() int {

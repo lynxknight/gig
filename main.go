@@ -54,28 +54,31 @@ func main() {
 }
 
 func pickBranch(target string, branches []branch) branch {
-	var buffer bytes.Buffer // buffer contains querystring
-	buffer.WriteString(target)
-	cursorpos := 0 // cursorpos stores current menu position
-	sortBranches(branches, buffer.String())
-	drawUI(branches, buffer.String(), cursorpos, getTermHeight())
-	for { // REPL
+	terminal := getTerm() // TODO: global variable in UI?
+
+	cursorPos := 0
+	var queryStringBuf bytes.Buffer
+	queryStringBuf.WriteString(target)
+
+	sortBranches(branches, queryStringBuf.String())
+	drawUI(branches, queryStringBuf.String(), cursorPos, getTermHeight())
+	for {
 		resort := true
-		moveCursor(1, buffer.Len()+1)
-		usrInput, _ := getUserInput()
+		moveCursor(1, queryStringBuf.Len()+1)
+		usrInput, _ := getUserInput(terminal)
 		switch usrInput.input {
 		case inputArrowUp:
-			if cursorpos > 0 {
-				cursorpos--
+			if cursorPos > 0 {
+				cursorPos--
 			}
 			resort = false
 		case inputArrowDown:
-			if cursorpos < len(branches)-1 {
-				cursorpos++
+			if cursorPos < len(branches)-1 {
+				cursorPos++
 			}
 			resort = false // TODO: Redraw only what's needed
 		case inputCtrlW:
-			buffer.Truncate(0)
+			queryStringBuf.Truncate(0)
 		case inputCtrlC:
 			clearScreen()
 			os.Exit(1)
@@ -83,24 +86,24 @@ func pickBranch(target string, branches []branch) branch {
 			clearScreen()
 			os.Exit(0)
 		case inputBackspace:
-			if buffer.Len() > 0 {
-				buffer.Truncate(buffer.Len() - 1)
+			if queryStringBuf.Len() > 0 {
+				queryStringBuf.Truncate(queryStringBuf.Len() - 1)
 			} else {
 				continue
 			}
 		case inputText:
-			cursorpos = 0
-			buffer.Write(usrInput.rawValue) // TODO: handle errors?
+			cursorPos = 0
+			queryStringBuf.Write(usrInput.rawValue) // TODO: handle errors?
 		case inputCR:
 			clearScreen()
-			return branches[cursorpos]
+			return branches[cursorPos]
 		default:
 			continue
 		}
 		if resort {
-			sortBranches(branches, buffer.String())
+			sortBranches(branches, queryStringBuf.String())
 		}
-		drawUI(branches, buffer.String(), cursorpos, getTermHeight())
+		drawUI(branches, queryStringBuf.String(), cursorPos, getTermHeight())
 	}
 }
 
