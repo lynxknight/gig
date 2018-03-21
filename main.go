@@ -44,6 +44,10 @@ func main() {
 	assureStdoutIsTTY()
 	target := parseArgs()
 	branches := getBranches()
+	if len(branches) == 0 {
+		fmt.Println("No branches found.")
+		return
+	}
 	if !exactMatch(target, branches) {
 		target = pickBranch(target, branches).name
 	}
