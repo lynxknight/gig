@@ -115,10 +115,10 @@ func levenscore(str, target string) int {
 	// would yield following result order:
 	// 	  * develop (branch A, not preferrable)
 	// 	  * feature/data_v3-memory-leak (branch B, preferrable)
-	// We failed to find exact match on branch B, so we fallback on calculating
-	// distance, but branch A would yield better score for almost any longer
-	// substring due to its length (i.e. pure replacements will do). To fix this
-	// we try to calculate "best distance between target and substrings of str".
+	// We failed to find exact match for both branches, so we fallback on distance
+	// calculation. Problem is, branch A would yield better score for almost any
+	// longer substring due to its length (i.e. pure replacements will do). So,
+	// we are calculating "best distance between target and substrings of str".
 	//
 	// There are several ways to pick substrings:
 	// 1) Sliding window of length len(target). Pick index X of str, and calculate
@@ -128,9 +128,9 @@ func levenscore(str, target string) int {
 	//
 	// 2) Search for all "almost occurences" of target[0] in str, let's say it is
 	// str[X], and calculate distance between target and str[X:X+len(target)].
-	// "Almost occurence" between X and Y is a case when either X == Y, or Y is any
-	// of chars that are located near X on the QWERTY keyboard. Almost occurences
-	// for char "h" are "tyugjbnm"
+	// "Almost occurence" between char A and B is a case when either A == B, or
+	// B belongs to set of chars located near A on the QWERTY keyboard. For example,
+	// almost occurences for char "h" are "tyugjbnm"
 
 	if len(str) <= len(target) {
 		return levenshteinIterative(str, target)
@@ -182,8 +182,8 @@ func levenshteinIterative(a, b string) int {
 }
 
 // GetScore finds out how much points does "substr" gain in "s", the lesser
-// the better. Exact matches grant -10 points, if there are no "exact" matches,
-// we try to go for "levenshtein" matches
+// the better. Exact matches grant -10 points each, if there are no exact
+// matches, we try to go for levenshtein distance
 func GetScore(s, substr string) int {
 	if em := exactMatches(s, substr); em != 0 {
 		return em * -10
