@@ -25,8 +25,8 @@ var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
 
 func drawUI(branches []branch, query string, cursorpos, height int) {
 	clearScreen()
-	fmt.Println(query)
-	fmt.Println("============")
+	fmt.Print(query + "\r\n")
+	fmt.Print("============" + "\r\n")
 	displayBranches(branches, cursorpos, height)
 }
 
@@ -40,7 +40,7 @@ func displayBranches(branches []branch, cursorpos, height int) {
 			branchesToPrint[i] = branches[i].name
 		}
 	}
-	fmt.Print(strings.Join(branchesToPrint, "\n"))
+	fmt.Print(strings.Join(branchesToPrint, "\r\n"))
 	// for index, branch := range branches {
 	// if index+4 > height {
 	// break
@@ -120,23 +120,27 @@ func getUserInput(terminal *term.Term) (result userInput, err error) {
 }
 
 func readTerm(t *term.Term) (numRead int, bytes []byte, err error) {
-	term.RawMode(t)
 	bytes = make([]byte, 140)
 	numRead, err = t.Read(bytes)
 	if err != nil {
 		return
 	}
-	t.Restore()
 	return
 }
 
 func getTerm() *term.Term {
 	t, err := term.Open("/dev/tty")
+	term.RawMode(t)
 	if err != nil {
 		panic("Failed to open tty device")
 	}
+	print("\033[?1049h")
 	return t
+}
 
+func restoreTerm(terminal *term.Term) {
+	print("\033[?1049l")
+	terminal.Restore()
 }
 
 func getTermHeight() int {

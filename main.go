@@ -63,7 +63,7 @@ func main() {
 
 func pickBranch(target string, branches []branch) (branch, error) {
 	terminal := getTerm()
-	defer terminal.Restore() // Seems like it is a golang way to atexit
+	defer restoreTerm(terminal) // Seems like it is a golang way to atexit
 
 	cursorPos := 0
 	var queryStringBuf bytes.Buffer
