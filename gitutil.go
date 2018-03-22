@@ -94,7 +94,8 @@ func getBranches() []branch {
 		}
 		if !info.IsDir() {
 			// TODO: what if ref is presented in both refs and packed-refs?
-			refs = append(refs, ref{name: path[len(refsPath)+1:], mdate: info.ModTime()})
+			r := ref{name: path[len(refsPath)+1:], mdate: info.ModTime()}
+			refs = append(refs, r)
 		}
 		return nil
 	})
