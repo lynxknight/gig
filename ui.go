@@ -134,12 +134,12 @@ func getTerm() *term.Term {
 	if err != nil {
 		panic("Failed to open tty device")
 	}
-	print("\033[?1049h")
+	fmt.Print("\033[?1049h")
 	return t
 }
 
 func restoreTerm(terminal *term.Term) {
-	print("\033[?1049l")
+	fmt.Print("\033[?1049l")
 	terminal.Restore()
 }
 
