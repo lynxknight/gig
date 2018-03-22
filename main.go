@@ -49,7 +49,11 @@ func main() {
 		return
 	}
 	if !exactMatch(target, branches) {
-		target = pickBranch(target, branches).name
+		targetBranch, err := pickBranch(target, branches)
+		if err != nil {
+			return
+		}
+		target = targetBranch.name
 	}
 	if err := checkoutBranch(target); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -57,8 +61,9 @@ func main() {
 	}
 }
 
-func pickBranch(target string, branches []branch) branch {
-	terminal := getTerm() // TODO: global variable in UI?
+func pickBranch(target string, branches []branch) (branch, error) {
+	terminal := getTerm()
+	defer terminal.Restore() // Seems like it is a golang way to atexit
 
 	cursorPos := 0
 	var queryStringBuf bytes.Buffer
@@ -83,12 +88,9 @@ func pickBranch(target string, branches []branch) branch {
 			resort = false // TODO: Redraw only what's needed
 		case inputCtrlW:
 			queryStringBuf.Truncate(0)
-		case inputCtrlC:
+		case inputCtrlC, inputCtrlD:
 			clearScreen()
-			os.Exit(1)
-		case inputCtrlD:
-			clearScreen()
-			os.Exit(0)
+			return branch{}, fmt.Errorf("Terminated")
 		case inputBackspace:
 			if queryStringBuf.Len() > 0 {
 				queryStringBuf.Truncate(queryStringBuf.Len() - 1)
@@ -100,7 +102,7 @@ func pickBranch(target string, branches []branch) branch {
 			queryStringBuf.Write(usrInput.rawValue) // TODO: handle errors?
 		case inputCR:
 			clearScreen()
-			return branches[cursorPos]
+			return branches[cursorPos], nil
 		default:
 			continue
 		}
