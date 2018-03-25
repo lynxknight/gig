@@ -11,6 +11,18 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+const (
+	U_HEADER = "============"
+
+	T_CURSOR_HIDE               = "\033[?25l"
+	T_CURSOR_SHOW               = "\033[?25h"
+	T_CLEAR_LINE                = "\033[K"
+	T_CLEAR_SCREEN              = "\033[H\033[2J"
+	T_NEWLINE                   = "\r\n"
+	T_CREATE_ALTERNATIVE_SCREEN = "\033[?1049h"
+	T_CLOSE_ALTERNATIVE_SCREEN  = "\033[?1049l"
+)
+
 func min(ints ...int) int {
 	m := ints[0]
 	for i := 1; i < len(ints); i++ {
@@ -21,37 +33,53 @@ func min(ints ...int) int {
 	return m
 }
 
-var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
-
-func drawUI(branches []branch, query string, cursorpos, height int) {
-	clearScreen()
-	fmt.Print(query + "\r\n")
-	fmt.Print("============" + "\r\n")
-	displayBranches(branches, cursorpos, height)
+type lineBuf struct {
+	lines []string
 }
 
-func displayBranches(branches []branch, cursorpos, height int) {
-	// var name string
-	branchesToPrint := make([]string, min(height-2, len(branches)))
-	for i := range branchesToPrint {
-		if cursorpos == i {
-			branchesToPrint[i] = highlighter("%v", branches[i].name)
-		} else {
-			branchesToPrint[i] = branches[i].name
+func (lb *lineBuf) Append(line string) {
+	lb.lines = append(lb.lines, line)
+}
+
+func (lb *lineBuf) ExtendText(lines []string) {
+	height := getTermHeight()
+	for i := 0; i < min(height, len(lines)); i++ {
+		lb.Append(T_CLEAR_LINE)
+		lb.Append(lines[i])
+		if i < height-1 {
+			lb.Append(T_NEWLINE)
 		}
 	}
-	fmt.Print(strings.Join(branchesToPrint, "\r\n"))
-	// for index, branch := range branches {
-	// if index+4 > height {
-	// break
-	// }
-	// if cursorpos == index {
-	// name = highlighter("%v", branch.name)
-	// } else {
-	// name = branch.name
-	// }
-	// fmt.Println(name)
-	// }
+}
+
+func (lb *lineBuf) Draw() {
+	fmt.Print(strings.Join(lb.lines, ""))
+}
+
+func drawUI(branches []branch, query string, cursorpos int) {
+	moveCursor(0, 0)
+	lb := lineBuf{}
+	lb.Append(T_CURSOR_HIDE)
+	lb.ExtendText(displayBranches(query, branches, cursorpos))
+	lb.Append(T_CURSOR_SHOW)
+	lb.Draw()
+}
+
+var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
+
+func displayBranches(query string, branches []branch, hindex int) []string {
+	// Probably it should not know about cursor position and height
+	branchesToPrint := make([]string, len(branches)+2)
+	branchesToPrint[0] = query
+	branchesToPrint[1] = U_HEADER
+	for i := range branches {
+		if hindex == i {
+			branchesToPrint[i+2] = highlighter("%v", branches[i].name)
+		} else {
+			branchesToPrint[i+2] = branches[i].name
+		}
+	}
+	return branchesToPrint
 }
 
 type inputType int
@@ -130,16 +158,21 @@ func readTerm(t *term.Term) (numRead int, bytes []byte, err error) {
 
 func getTerm() *term.Term {
 	t, err := term.Open("/dev/tty")
-	term.RawMode(t)
 	if err != nil {
-		panic("Failed to open tty device")
+		log.Fatalln("Failed to open tty device")
 	}
-	fmt.Print("\033[?1049h")
+	err = term.RawMode(t)
+	if err != nil {
+		log.Fatalln("Failed to enter raw mode")
+	}
+	fmt.Print(T_CREATE_ALTERNATIVE_SCREEN)
 	return t
 }
 
 func restoreTerm(terminal *term.Term) {
-	fmt.Print("\033[?1049l")
+	if os.Getenv("NOCLEAR") != "1" {
+		fmt.Print(T_CLOSE_ALTERNATIVE_SCREEN)
+	}
 	terminal.Restore()
 }
 
@@ -152,10 +185,7 @@ func getTermHeight() int {
 }
 
 func clearScreen() {
-	if os.Getenv("NOCLEAR") == "1" {
-		return
-	}
-	print("\033[H\033[2J")
+	fmt.Print(T_CLEAR_SCREEN)
 }
 
 func moveCursor(line, col int) {

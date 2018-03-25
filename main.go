@@ -64,13 +64,12 @@ func main() {
 func pickBranch(target string, branches []branch) (branch, error) {
 	terminal := getTerm()
 	defer restoreTerm(terminal) // Seems like it is a golang way to atexit
-
 	cursorPos := 0
 	var queryStringBuf bytes.Buffer
 	queryStringBuf.WriteString(target)
-
 	sortBranches(branches, queryStringBuf.String())
-	drawUI(branches, queryStringBuf.String(), cursorPos, getTermHeight())
+	drawUI(branches, queryStringBuf.String(), cursorPos)
+
 	for {
 		resort := true
 		moveCursor(1, queryStringBuf.Len()+1)
@@ -109,7 +108,7 @@ func pickBranch(target string, branches []branch) (branch, error) {
 		if resort {
 			sortBranches(branches, queryStringBuf.String())
 		}
-		drawUI(branches, queryStringBuf.String(), cursorPos, getTermHeight())
+		drawUI(branches, queryStringBuf.String(), cursorPos)
 	}
 }
 
