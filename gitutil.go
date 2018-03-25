@@ -57,12 +57,12 @@ func getGitRoot() string {
 	return path.Join(cwd, ".git")
 }
 
-func getPackedRefs(gitRoot string) ([]ref, error) {
+func getPackedRefs(gitRoot string) []ref {
 	// git has a "more perfomant" way of storing refs info, called "packed-refs"
 	// more info at https://git-scm.com/docs/git-pack-refs
 	byteContent, err := ioutil.ReadFile(path.Join(gitRoot, "packed-refs"))
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	content := string(byteContent)
 	refsHeads := "refs/heads" // we care about heads only now
@@ -80,48 +80,65 @@ func getPackedRefs(gitRoot string) ([]ref, error) {
 			)
 		}
 	}
-	return refs, nil
+	return refs
 }
 
-func getBranches() []branch {
-	// git for-each-ref is unstable across git versions, so we implement it
-	gitRoot := getGitRoot()
+func getFSRefs(refsPath string) []ref {
+	if _, err := os.Stat(refsPath); err != nil {
+		return nil // for example, there might be no remotes/origin
+	}
 	refs := make([]ref, 0)
-	refsPath := path.Join(gitRoot, "refs", "heads")
 	filepath.Walk(refsPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Fatalln("Runtime failed to walk on path", path, err)
 		}
 		if !info.IsDir() {
-			// TODO: what if ref is presented in both refs and packed-refs?
 			r := ref{name: path[len(refsPath)+1:], mdate: info.ModTime()}
 			refs = append(refs, r)
 		}
 		return nil
 	})
-	packedRefs, err := getPackedRefs(gitRoot)
-	if err == nil {
-		refs = append(refs, packedRefs...)
+	return refs
+}
+
+func getBranches() []branch {
+	// git for-each-ref is unstable across git versions, so we implement it
+	refmap := make(map[string]ref)
+	gitRoot := getGitRoot()
+	refsHeads := getFSRefs(path.Join(gitRoot, "refs", "heads"))
+	refsRemotes := getFSRefs(path.Join(gitRoot, "refs", "remotes", "origin"))
+	packedRefs := getPackedRefs(gitRoot)
+	// "local" refsHeads are prioritized
+	for _, rr := range [...][]ref{packedRefs, refsRemotes, refsHeads} {
+		for _, r := range rr {
+			refmap[r.name] = r
+		}
 	}
-	branches := make([]branch, len(refs))
-	for i := range refs {
+	delete(refmap, "HEAD") // present in remotes
+	branches := make([]branch, len(refmap))
+	i := 0
+	for k := range refmap {
 		branches[i] = branch{
-			name:      refs[i].name,
+			name:      refmap[k].name,
 			costcache: make(costcacheT),
 		}
 		// Empty QS = sort by date
 		// Screw you if you run on 32bit system
-		branches[i].costcache[""] = -int(refs[i].mdate.Unix())
+		branches[i].costcache[""] = -int(refmap[k].mdate.Unix())
+		i++
 	}
 	return branches
 }
 
 func checkoutBranch(branch string) error {
+	fmt.Println("git checkout", branch)
 	gcheckout := exec.Command("git", "checkout", branch)
 	out, err := gcheckout.Output()
 	if err != nil {
 		return fmt.Errorf(string(err.(*exec.ExitError).Stderr))
 	}
-	fmt.Println(string(out))
+	if len(out) > 0 {
+		fmt.Println(string(out))
+	}
 	return nil
 }
