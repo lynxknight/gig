@@ -71,6 +71,7 @@ func pickBranch(target string, branches []branch) (branch, error) {
 	drawUI(branches, queryStringBuf.String(), cursorPos)
 
 	for {
+		allowedCursorPos := getTermHeight() - 3
 		resort := true
 		moveCursor(1, queryStringBuf.Len()+1)
 		usrInput, _ := getUserInput(terminal)
@@ -81,7 +82,8 @@ func pickBranch(target string, branches []branch) (branch, error) {
 			}
 			resort = false
 		case inputArrowDown:
-			if cursorPos < len(branches)-1 {
+			// TODO: allow scrolling?
+			if cursorPos < min(len(branches)-1, allowedCursorPos) {
 				cursorPos++
 			}
 			resort = false // TODO: Redraw only what's needed
