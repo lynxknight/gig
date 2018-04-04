@@ -5,6 +5,20 @@ import (
 	"unicode/utf8"
 )
 
+func max2(a, b int) int {
+	if a >= b {
+		return a
+	}
+	return b
+}
+
+func min2(a, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
+}
+
 func min(ints ...int) int {
 	m := ints[0]
 	for i := 1; i < len(ints); i++ {
@@ -15,146 +29,70 @@ func min(ints ...int) int {
 	return m
 }
 
-// var RD = -1
-
-// func RDBG(format string, a ...interface{}) {
-// 	return
-// 	for i := 0; i < RD; i++ {
-// 		fmt.Printf("  ")
-// 	}
-// 	fmt.Printf(format, a...)
-// 	fmt.Printf("\n")
-// }
-
-type mkey struct {
-	a1, a2 int
+// Score struct contains actual score and indexes that represet this score
+type Score struct {
+	distance, i1, i2 int
 }
 
-func levenshteinDistanceRecursive(i, j int, s1, s2 *string, matrix map[mkey]int) int {
-	// RD += 1
-	key := mkey{i, j}
-	v, ok := matrix[key]
-	if ok {
-		// RDBG("RETURN i=%v j=%v FROM CHACHE answer=%v", i, j, v)
-		// RD -= 1
-		return v
-	}
+const levenThreshold = 999999 // just random big value who cares
 
-	// RDBG("i=%v; j=%v;", i, j)
-	// if RD > 300 {
-	// os.Exit(1)
-	// }
-	if i == -1 && j == -1 {
-		// RDBG("RETURN i=-1 j=-1 answer=0")
-		// RD -= 1
-		return 0
+func exactMatches(s, substr string) Score {
+	// TODO: rethink magic values
+	index := strings.Index(s, substr)
+	if index == -1 {
+		return Score{distance: -1}
 	}
-	if i == -1 {
-		// RDBG("RETURN i=-1 and answer j=%v", j)
-		// RD -= 1
-		return j + 1
-	}
-	if j == -1 {
-		// RDBG("RETURN j=-1 and answer i=%v", i)
-		// RD -= 1
-		return i + 1
-	}
-
-	ne := 1
-	if (*s1)[i] == (*s2)[j] {
-		ne = 0
-	}
-
-	if i == 0 && j == 0 {
-		// RDBG("RETURN ne: %v", ne)
-		// RD -= 1
-		return ne
-	}
-	// RDBG("MOVE UP")
-	a1 := levenshteinDistanceRecursive(i, j-1, s1, s2, matrix) + 1
-	// RDBG("MOVE LEFT")
-	a2 := levenshteinDistanceRecursive(i-1, j, s1, s2, matrix) + 1
-	// RDBG("MOVE UP-LEFT")
-	a3 := levenshteinDistanceRecursive(i-1, j-1, s1, s2, matrix) + ne
-	// RDBG("[considering those for min: %v; %v; %v;", a1, a2, a3)
-	res := min(a1, a2, a3)
-	// RDBG("RETURN RES for i=%v; j=%v; RES=%v", i, j, res)
-	// RD -= 1
-	matrix[key] = res
-	return res
+	return Score{-10, index, index + len(substr)}
 }
 
-// LevenshteinDistance calculates Levenshtein distance between s1 and s2
-func levenshteinDistance(s1, s2 string) int {
-	matrix := make(map[mkey]int)
-	return levenshteinDistanceRecursive(len(s1)-1, len(s2)-1, &s1, &s2, matrix)
-}
+func calcLevenshteinScore(str, target string) Score {
+	/* We could have just computed levenshtein distance, but then "short"
+	strings would always win over long ones. For example, querying "data-v3"
+	would yield following result order:
+		* develop (branch A, not preferrable)
+		* feature/data_v3-memory-leak (branch B, preferrable)
+	We failed to find exact match for both branches, so we fallback on distance
+	calculation. Problem is, branch A would yield better score for almost any
+	longer substring due to its length (i.e. pure replacements will do). So,
+	we are calculating "best distance between target and substrings of str".
 
-func exactMatches(s, substr string) int {
-	return strings.Count(s, substr)
-}
+	There are several ways to pick substrings:
+	1) Sliding window of length len(target). Pick index X of str, and calculate
+	distance between str[X:X+len(target)] and target for each X that allows such
+	window size. Good method, but it lacks perfomance for long strings, so we
+	need to throw away "looks like bad" windows.
 
-func levenshteinScore(s, substr string) int {
-	base := 100
-	slen := len(s)
-	sublen := len(substr)
-	if slen < sublen {
-		return base
-	}
-	diffsize := slen - sublen
-	scores := make([]int, diffsize+1)
-	for i := 0; i < diffsize-1; i++ {
-		scores = append(scores, levenshteinDistance(s[i:i+sublen+1], substr))
-	}
-	return base + min(scores...)
-}
-
-func levenscore(str, target string) int {
-	// We could have just computed levenshtein distance, but then "short"
-	// strings would always win over long ones. For example, querying "data-v3"
-	// would yield following result order:
-	// 	  * develop (branch A, not preferrable)
-	// 	  * feature/data_v3-memory-leak (branch B, preferrable)
-	// We failed to find exact match for both branches, so we fallback on distance
-	// calculation. Problem is, branch A would yield better score for almost any
-	// longer substring due to its length (i.e. pure replacements will do). So,
-	// we are calculating "best distance between target and substrings of str".
-	//
-	// There are several ways to pick substrings:
-	// 1) Sliding window of length len(target). Pick index X of str, and calculate
-	// distance between str[X:X+len(target)] and target for each X that allows such
-	// window size. Good method, but it lacks perfomance for long strings, so we
-	// need to throw away "looks like bad" windows.
-	//
-	// 2) Search for all "almost occurences" of target[0] in str, let's say it is
-	// str[X], and calculate distance between target and str[X:X+len(target)].
-	// "Almost occurence" between char A and B is a case when either A == B, or
-	// B belongs to set of chars located near A on the QWERTY keyboard. For example,
-	// almost occurences for char "h" are "tyugjbnm"
-
+	2) Search for all "almost occurences" of target[0] in str, let's say it is
+	str[X], and calculate distance between target and str[X:X+len(target)].
+	"Almost occurence" between char A and B is a case when either A == B, or
+	B belongs to set of chars located near A on the QWERTY keyboard. For example,
+	almost occurences for char "h" are "tyugjbnm" */
+	var score Score
+	score.distance = levenThreshold
 	if len(str) <= len(target) {
-		return levenshteinIterative(str, target)
+		return Score{calcLeventshteinDistance(str, target, score.distance), 0, len(str)}
 	}
-
 	lenDiff := len(str) - len(target)
 	targetStartByte := target[0]
 	typosMaps := GetTyposMaps()
-	scores := make([]int, 0)
 	for bytePos := 0; bytePos < lenDiff; bytePos++ {
 		if str[bytePos] == targetStartByte || typosMaps[targetStartByte][str[bytePos]] {
 			window := str[bytePos : bytePos+len(target)]
-			score := levenshteinIterative(window, target)
-			// fmt.Println(window, score)
-			scores = append(scores, score)
+			newDistance := calcLeventshteinDistance(window, target, score.distance)
+			if newDistance < score.distance {
+				score.distance = newDistance
+				score.i1, score.i2 = bytePos, bytePos+len(target)
+			}
 		}
 	}
-	if len(scores) == 0 {
-		return levenshteinIterative(str, target)
+	if score.i2 != 0 { // basically we check if we hit "if" condition in "for" loop
+		return score
 	}
-	return min(scores...)
+	return Score{calcLeventshteinDistance(str, target, score.distance), 0, len(str)}
 }
 
-func levenshteinIterative(a, b string) int {
+func calcLeventshteinDistance(a, b string, threshold int) int {
+	// TODO: replace with naive implementation (or understand how this works)
 	f := make([]int, utf8.RuneCountInString(b)+1)
 
 	for j := range f {
@@ -172,7 +110,6 @@ func levenshteinIterative(a, b string) int {
 			} else {
 				mn = min(mn, fj1) // matched
 			}
-
 			fj1, f[j] = f[j], mn // save f[j] to fj1(j is about to increase), update f[j] to mn
 			j++
 		}
@@ -184,15 +121,16 @@ func levenshteinIterative(a, b string) int {
 // GetScore finds out how much points does "substr" gain in "s", the lesser
 // the better. Exact matches grant -10 points each, if there are no exact
 // matches, we try to go for levenshtein distance
-func GetScore(s, substr string) int {
-	if em := exactMatches(s, substr); em != 0 {
-		return em * -10
+func GetScore(s, substr string) Score {
+	if em := exactMatches(s, substr); em.distance != 0 {
+		return em
 	}
-	score := 0
+	var score Score
 	if len(substr) > 3 {
-		score = levenscore(s, substr)
-	} else {
-		score = levenshteinIterative(s, substr)
+		score = calcLevenshteinScore(s, substr)
+	} else { // TODO why this "if" exists?
+		score.distance = calcLeventshteinDistance(s, substr, levenThreshold)
+		score.i2 = len(substr)
 	}
 	return score
 }
