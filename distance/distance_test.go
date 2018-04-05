@@ -71,6 +71,13 @@ func TestCalcLevenshteinScore(t *testing.T) {
 	}
 }
 
+func TestGetScore(t *testing.T) {
+	destScore := Score{1, 0, 7}
+	if s := GetScore("feature/1/2/3", "featyre"); s != destScore {
+		t.Errorf("%v", s)
+	}
+}
+
 // In case of troubles with some test
 // func TestSpecificCase(t *testing.T) {
 // 	test := levTest{s1: "saturday", s2: "sunday", edistance: 3}

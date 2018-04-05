@@ -66,6 +66,11 @@ func drawUI(branches []branch, query string, cursorpos int) {
 }
 
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
+var underliner = color.New(color.Underline).SprintfFunc()
+
+func underline(str string, i1, i2 int) string {
+	return fmt.Sprintf("%v%v%v", str[:i1], underliner("%v", str[i1:i2]), str[i2:])
+}
 
 func displayBranches(query string, branches []branch, hindex int) []string {
 	// Probably it should not know about cursor position and height
@@ -73,10 +78,12 @@ func displayBranches(query string, branches []branch, hindex int) []string {
 	branchesToPrint[0] = query
 	branchesToPrint[1] = U_HEADER
 	for i := range branches {
+		i1, i2 := branches[i].costcache[query].I1, branches[i].costcache[query].I2
+		str := underline(branches[i].name, i1, i2)
 		if hindex == i {
-			branchesToPrint[i+2] = highlighter("%v", branches[i].name)
+			branchesToPrint[i+2] = highlighter("%v", str)
 		} else {
-			branchesToPrint[i+2] = branches[i].name
+			branchesToPrint[i+2] = str
 		}
 	}
 	return branchesToPrint

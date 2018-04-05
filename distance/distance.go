@@ -31,7 +31,7 @@ func min(ints ...int) int {
 
 // Score struct contains actual score and indexes that represet this score
 type Score struct {
-	distance, i1, i2 int
+	Distance, I1, I2 int // TODO: i1 i2 into range
 }
 
 const levenThreshold = 999999 // just random big value who cares
@@ -40,7 +40,7 @@ func exactMatches(s, substr string) Score {
 	// TODO: rethink magic values
 	index := strings.Index(s, substr)
 	if index == -1 {
-		return Score{distance: -1}
+		return Score{Distance: -1}
 	}
 	return Score{-10, index, index + len(substr)}
 }
@@ -68,9 +68,9 @@ func calcLevenshteinScore(str, target string) Score {
 	B belongs to set of chars located near A on the QWERTY keyboard. For example,
 	almost occurences for char "h" are "tyugjbnm" */
 	var score Score
-	score.distance = levenThreshold
+	score.Distance = levenThreshold
 	if len(str) <= len(target) {
-		return Score{calcLeventshteinDistance(str, target, score.distance), 0, len(str)}
+		return Score{calcLeventshteinDistance(str, target, score.Distance), 0, len(str)}
 	}
 	lenDiff := len(str) - len(target)
 	targetStartByte := target[0]
@@ -78,17 +78,17 @@ func calcLevenshteinScore(str, target string) Score {
 	for bytePos := 0; bytePos < lenDiff; bytePos++ {
 		if str[bytePos] == targetStartByte || typosMaps[targetStartByte][str[bytePos]] {
 			window := str[bytePos : bytePos+len(target)]
-			newDistance := calcLeventshteinDistance(window, target, score.distance)
-			if newDistance < score.distance {
-				score.distance = newDistance
-				score.i1, score.i2 = bytePos, bytePos+len(target)
+			newDistance := calcLeventshteinDistance(window, target, score.Distance)
+			if newDistance < score.Distance {
+				score.Distance = newDistance
+				score.I1, score.I2 = bytePos, bytePos+len(target)
 			}
 		}
 	}
-	if score.i2 != 0 { // basically we check if we hit "if" condition in "for" loop
+	if score.I2 != 0 { // basically we check if we hit "if" condition in "for" loop
 		return score
 	}
-	return Score{calcLeventshteinDistance(str, target, score.distance), 0, len(str)}
+	return Score{calcLeventshteinDistance(str, target, score.Distance), 0, len(str)}
 }
 
 func calcLeventshteinDistance(a, b string, threshold int) int {
@@ -122,15 +122,15 @@ func calcLeventshteinDistance(a, b string, threshold int) int {
 // the better. Exact matches grant -10 points each, if there are no exact
 // matches, we try to go for levenshtein distance
 func GetScore(s, substr string) Score {
-	if em := exactMatches(s, substr); em.distance != 0 {
+	if em := exactMatches(s, substr); em.Distance != -1 {
 		return em
 	}
 	var score Score
 	if len(substr) > 3 {
 		score = calcLevenshteinScore(s, substr)
 	} else { // TODO why this "if" exists?
-		score.distance = calcLeventshteinDistance(s, substr, levenThreshold)
-		score.i2 = len(substr)
+		score.Distance = calcLeventshteinDistance(s, substr, levenThreshold)
+		score.I2 = len(substr)
 	}
 	return score
 }

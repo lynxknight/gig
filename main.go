@@ -8,7 +8,6 @@ import (
 	"sort"
 
 	"github.com/lynxknight/gig/distance"
-
 	"github.com/mattn/go-isatty"
 )
 
@@ -125,11 +124,10 @@ func sortBranches(branches []branch, query string) {
 	// start2 := time.Now().UnixNano()
 	// cost := start2 - start
 	sort.SliceStable(branches, func(i, j int) bool {
-		return branches[i].costcache[query] <= branches[j].costcache[query]
+		return branches[i].costcache[query].Distance <= branches[j].costcache[query].Distance
 	})
 	// sort := time.Now().UnixNano() - start2
 	// total := sort + cost
-	moveCursor(2, 0)
 	// f, err := os.OpenFile("/tmp/metrix.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0777)
 	// if err != nil {
 	// log.Fatalln(err)

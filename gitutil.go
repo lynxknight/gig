@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/lynxknight/gig/distance"
 )
 
 type ref struct {
@@ -17,7 +19,7 @@ type ref struct {
 	mdate time.Time
 }
 
-type costcacheT map[string]int
+type costcacheT map[string]distance.Score
 
 type branch struct {
 	name      string
@@ -124,7 +126,7 @@ func getBranches() []branch {
 		}
 		// Empty QS = sort by date
 		// Screw you if you run on 32bit system
-		branches[i].costcache[""] = -int(refmap[k].mdate.Unix())
+		branches[i].costcache[""] = distance.Score{Distance: -int(refmap[k].mdate.Unix())}
 		i++
 	}
 	return branches
