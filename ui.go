@@ -68,10 +68,6 @@ func drawUI(branches []branch, query string, cursorpos int) {
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
 var underliner = color.New(color.Underline).SprintfFunc()
 
-func underline(str string, i1, i2 int) string {
-	return fmt.Sprintf("%v%v%v", str[:i1], underliner("%v", str[i1:i2]), str[i2:])
-}
-
 func displayBranches(query string, branches []branch, hindex int) []string {
 	// Probably it should not know about cursor position and height
 	branchesToPrint := make([]string, len(branches)+2)
@@ -79,11 +75,19 @@ func displayBranches(query string, branches []branch, hindex int) []string {
 	branchesToPrint[1] = U_HEADER
 	for i := range branches {
 		i1, i2 := branches[i].costcache[query].I1, branches[i].costcache[query].I2
-		str := underline(branches[i].name, i1, i2)
+		str := branches[i].name
 		if hindex == i {
-			branchesToPrint[i+2] = highlighter("%v", str)
+			// Escape sequences cannot be "nested", i.e. we cannot do
+			// H...U..ESC...ESC, first escape will cancel out both H and U, so
+			// we need to re-highlight part that comes after underline
+			// TODO: investigate colorlib, maybe we can do it better
+			first_part := highlighter("%v%v", str[:i1], underliner("%v", str[i1:i2]))
+			second_part := highlighter("%v", str[i2:])
+			branchesToPrint[i+2] = first_part + second_part
 		} else {
-			branchesToPrint[i+2] = str
+			branchesToPrint[i+2] = fmt.Sprintf(
+				"%v%v%v", str[:i1], underliner("%v", str[i1:i2]), str[i2:],
+			)
 		}
 	}
 	return branchesToPrint
