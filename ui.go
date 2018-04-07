@@ -41,11 +41,22 @@ func (lb *lineBuf) Append(line string) {
 	lb.lines = append(lb.lines, line)
 }
 
-func (lb *lineBuf) ExtendText(lines []string) {
+func (lb *lineBuf) ExtendText(newLines []string) {
 	height := getTermHeight()
-	for i := 0; i < min(height, len(lines)); i++ {
+	for i := 0; i < min(height, len(newLines)); i++ {
 		lb.Append(T_CLEAR_LINE)
-		lb.Append(lines[i])
+		lb.Append(newLines[i])
+		if i < height-1 {
+			lb.Append(T_NEWLINE)
+		}
+	}
+}
+
+func (lb *lineBuf) FillWithEmptyLines() {
+	height := getTermHeight()
+	fillerLinesCount := height - len(lb.lines)
+	for i := 0; i < fillerLinesCount; i++ {
+		lb.Append(T_CLEAR_LINE)
 		if i < height-1 {
 			lb.Append(T_NEWLINE)
 		}
@@ -56,13 +67,17 @@ func (lb *lineBuf) Draw() {
 	fmt.Print(strings.Join(lb.lines, ""))
 }
 
-func drawUI(branches []branch, query string, cursorpos int) {
+func drawUI(branches []branch, query string, cursorpos int) int {
 	moveCursor(0, 0)
 	lb := lineBuf{}
 	lb.Append(T_CURSOR_HIDE)
-	lb.ExtendText(displayBranches(query, branches, cursorpos))
+	// stringsToDisplay contains querystring and header
+	stringsToDisplay := displayBranches(query, branches, cursorpos)
+	lb.ExtendText(stringsToDisplay)
+	//lb.FillWithEmptyLines()
 	lb.Append(T_CURSOR_SHOW)
 	lb.Draw()
+	return len(stringsToDisplay) - 2
 }
 
 var highlighter = color.New(color.BgWhite, color.FgBlack).SprintfFunc()
