@@ -70,11 +70,21 @@ var underliner = color.New(color.Underline).SprintfFunc()
 
 func displayBranches(query string, branches []branch, hindex int) []string {
 	// Probably it should not know about cursor position and height
-	branchesToPrint := make([]string, len(branches)+2)
+	branchesToPrint := make([]string, 2, len(branches)+2)
 	branchesToPrint[0] = query
 	branchesToPrint[1] = U_HEADER
+	if len(branches) == 0 {
+		return branchesToPrint
+	}
+	maxDistanceOfInterest := branches[0].costcache[query].Distance + 5
 	for i := range branches {
-		i1, i2 := branches[i].costcache[query].I1, branches[i].costcache[query].I2
+		// TODO: we might create / not create "validation" function in runtime
+		// Empty query => no validation
+		score := branches[i].costcache[query]
+		if query != "" && score.Distance > maxDistanceOfInterest {
+			break
+		}
+		i1, i2 := score.I1, score.I2
 		str := branches[i].name
 		if hindex == i {
 			// Escape sequences cannot be "nested", i.e. we cannot do
@@ -83,10 +93,12 @@ func displayBranches(query string, branches []branch, hindex int) []string {
 			// TODO: investigate colorlib, maybe we can do it better
 			first_part := highlighter("%v%v", str[:i1], underliner("%v", str[i1:i2]))
 			second_part := highlighter("%v", str[i2:])
-			branchesToPrint[i+2] = first_part + second_part
+			branchesToPrint = append(branchesToPrint, first_part+second_part)
 		} else {
-			branchesToPrint[i+2] = fmt.Sprintf(
-				"%v%v%v", str[:i1], underliner("%v", str[i1:i2]), str[i2:],
+			branchesToPrint = append(
+				branchesToPrint, fmt.Sprintf(
+					"%v%v%v", str[:i1], underliner("%v", str[i1:i2]), str[i2:],
+				),
 			)
 		}
 	}

@@ -61,16 +61,17 @@ func main() {
 }
 
 func pickBranch(target string, branches []branch) (branch, error) {
-	terminal := getTerm()
-	defer restoreTerm(terminal) // Seems like it is a golang way to atexit
 	cursorPos := 0
 	var queryStringBuf bytes.Buffer
 	queryStringBuf.WriteString(target)
+
+	terminal := getTerm()
+	defer restoreTerm(terminal) // Seems like it is a golang way to atexit
+
 	sortBranches(branches, queryStringBuf.String())
 	drawUI(branches, queryStringBuf.String(), cursorPos)
-
 	for {
-		allowedCursorPos := getTermHeight() - 3
+		maxAllowedCursorPos := getTermHeight() - 3
 		resort := true
 		moveCursor(1, queryStringBuf.Len()+1)
 		usrInput, _ := getUserInput(terminal)
@@ -82,7 +83,7 @@ func pickBranch(target string, branches []branch) (branch, error) {
 			resort = false
 		case inputArrowDown:
 			// TODO: allow scrolling?
-			if cursorPos < min(len(branches)-1, allowedCursorPos) {
+			if cursorPos < min(len(branches)-1, maxAllowedCursorPos) {
 				cursorPos++
 			}
 			resort = false // TODO: Redraw only what's needed
