@@ -42,7 +42,10 @@ func exactMatches(s, substr string) Score {
 	if index == -1 {
 		return Score{Distance: -1}
 	}
-	return Score{-10, index, index + len(substr)}
+	// TODO: magic value for exact match was set to 0 since we have an allowed
+	// range of minDistance(branches)+5 threshold (but maybe changing it was
+	// not as good of an idea)
+	return Score{0, index, index + len(substr)}
 }
 
 func calcLevenshteinScore(str, target string) Score {
@@ -70,13 +73,15 @@ func calcLevenshteinScore(str, target string) Score {
 	var score Score
 	score.Distance = levenThreshold
 	if len(str) <= len(target) {
-		return Score{calcLeventshteinDistance(str, target, score.Distance), 0, len(str)}
+		distance := calcLeventshteinDistance(str, target, score.Distance)
+		return Score{distance, 0, len(str)}
 	}
 	lenDiff := len(str) - len(target)
 	targetStartByte := target[0]
 	typosMaps := GetTyposMaps()
 	for bytePos := 0; bytePos < lenDiff; bytePos++ {
-		if str[bytePos] == targetStartByte || typosMaps[targetStartByte][str[bytePos]] {
+		isAllowedTypo := typosMaps[targetStartByte][str[bytePos]]
+		if str[bytePos] == targetStartByte || isAllowedTypo {
 			window := str[bytePos : bytePos+len(target)]
 			newDistance := calcLeventshteinDistance(window, target, score.Distance)
 			if newDistance < score.Distance {
@@ -122,6 +127,8 @@ func calcLeventshteinDistance(a, b string, threshold int) int {
 // the better. Exact matches grant -10 points each, if there are no exact
 // matches, we try to go for levenshtein distance
 func GetScore(s, substr string) Score {
+	// TODO: try using same terms everywhere. Current zoo of "a", "s", "str"
+	// looks silly
 	if em := exactMatches(s, substr); em.Distance != -1 {
 		return em
 	}
@@ -130,7 +137,7 @@ func GetScore(s, substr string) Score {
 		score = calcLevenshteinScore(s, substr)
 	} else { // TODO why this "if" exists?
 		score.Distance = calcLeventshteinDistance(s, substr, levenThreshold)
-		score.I2 = len(substr)
+		score.I2 = min(len(substr), len(s))
 	}
 	return score
 }

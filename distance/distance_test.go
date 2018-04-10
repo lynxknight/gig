@@ -78,6 +78,27 @@ func TestGetScore(t *testing.T) {
 	}
 }
 
+func TestGetScoreStrShorterThanTarget(t *testing.T) {
+	destScore := Score{1, 0, 2}
+	if s := GetScore("12", "123"); s != destScore {
+		t.Errorf("%v", s)
+	}
+}
+
+func TestGetScoreStrShorterThanTargetButOverThreshold(t *testing.T) {
+	destScore := Score{2, 0, 2}
+	if s := GetScore("12", "1234"); s != destScore {
+		t.Errorf("\nWant: %v\nHave: %v", destScore, s)
+	}
+}
+
+func TestGetScoreStrShorterThanTargetButMuchOverThreshold(t *testing.T) {
+	destScore := Score{6, 0, 2}
+	if s := GetScore("12", "12345678"); s != destScore {
+		t.Errorf("\nWant: %v\nHave: %v", destScore, s)
+	}
+}
+
 // In case of troubles with some test
 // func TestSpecificCase(t *testing.T) {
 // 	test := levTest{s1: "saturday", s2: "sunday", edistance: 3}
