@@ -34,7 +34,8 @@ func min(ints ...int) int {
 }
 
 type lineBuf struct {
-	lines []string
+	lines          []string
+	dataLinesCount int
 }
 
 func (lb *lineBuf) Append(line string) {
@@ -46,6 +47,7 @@ func (lb *lineBuf) ExtendText(newLines []string) {
 	for i := 0; i < min(height, len(newLines)); i++ {
 		lb.Append(T_CLEAR_LINE)
 		lb.Append(newLines[i])
+		lb.dataLinesCount++
 		if i < height-1 {
 			lb.Append(T_NEWLINE)
 		}
@@ -54,7 +56,8 @@ func (lb *lineBuf) ExtendText(newLines []string) {
 
 func (lb *lineBuf) FillWithEmptyLines() {
 	height := getTermHeight()
-	fillerLinesCount := height - len(lb.lines)
+	// it feels like sometimes we are clearing too much :D
+	fillerLinesCount := height - lb.dataLinesCount - 2
 	for i := 0; i < fillerLinesCount; i++ {
 		lb.Append(T_CLEAR_LINE)
 		if i < height-1 {
@@ -74,7 +77,7 @@ func drawUI(branches []branch, query string, cursorpos int) int {
 	// stringsToDisplay contains querystring and header
 	stringsToDisplay := displayBranches(query, branches, cursorpos)
 	lb.ExtendText(stringsToDisplay)
-	//lb.FillWithEmptyLines()
+	lb.FillWithEmptyLines()
 	lb.Append(T_CURSOR_SHOW)
 	lb.Draw()
 	return len(stringsToDisplay) - 2
@@ -91,7 +94,7 @@ func displayBranches(query string, branches []branch, hindex int) []string {
 	if len(branches) == 0 {
 		return branchesToPrint
 	}
-	maxDistanceOfInterest := branches[0].costcache[query].Distance + 5
+	maxDistanceOfInterest := branches[0].costcache[query].Distance + 4
 	for i := range branches {
 		// TODO: we might create / not create "validation" function in runtime
 		// Empty query => no validation
