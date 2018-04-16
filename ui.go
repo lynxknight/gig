@@ -88,7 +88,8 @@ var underliner = color.New(color.Underline).SprintfFunc()
 
 func displayBranches(query string, branches []branch, hindex int) []string {
 	// Probably it should not know about cursor position and height
-	branchesToPrint := make([]string, 2, len(branches)+2)
+	termHeight := getTermHeight() // TODO: optimize getTermHeight calls
+	branchesToPrint := make([]string, 2, termHeight)
 	branchesToPrint[0] = query
 	branchesToPrint[1] = U_HEADER
 	if len(branches) == 0 {
@@ -96,6 +97,10 @@ func displayBranches(query string, branches []branch, hindex int) []string {
 	}
 	maxDistanceOfInterest := branches[0].costcache[query].Distance + 4
 	for i := range branches {
+		// We are not interested in branches that do not fit into screen
+		if i >= termHeight-2 {
+			break
+		}
 		// TODO: we might create / not create "validation" function in runtime
 		// Empty query => no validation
 		score := branches[i].costcache[query]
