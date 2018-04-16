@@ -57,10 +57,10 @@ func (lb *lineBuf) ExtendText(newLines []string) {
 func (lb *lineBuf) FillWithEmptyLines() {
 	height := getTermHeight()
 	// it feels like sometimes we are clearing too much :D
-	fillerLinesCount := height - lb.dataLinesCount - 2
+	fillerLinesCount := height - lb.dataLinesCount
 	for i := 0; i < fillerLinesCount; i++ {
 		lb.Append(T_CLEAR_LINE)
-		if i < height-1 {
+		if i < fillerLinesCount-1 {
 			lb.Append(T_NEWLINE)
 		}
 	}
