@@ -125,7 +125,12 @@ func sortBranches(branches []branch, query string) {
 	// start2 := time.Now().UnixNano()
 	// cost := start2 - start
 	sort.SliceStable(branches, func(i, j int) bool {
-		return branches[i].costcache[query].Distance <= branches[j].costcache[query].Distance
+		di := branches[i].costcache[query].Distance
+		dj := branches[j].costcache[query].Distance
+		if di == dj {
+			return len(branches[i].name) < len(branches[j].name)
+		}
+		return di < dj
 	})
 	// sort := time.Now().UnixNano() - start2
 	// total := sort + cost
