@@ -127,6 +127,8 @@ func calcLeventshteinDistance(a, b string, threshold int) int {
 // the better. Exact matches grant -10 points each, if there are no exact
 // matches, we try to go for levenshtein distance
 func GetScore(s, substr string) Score {
+	s = strings.ToLower(s)
+	substr = strings.ToLower(substr)
 	// TODO: try using same terms everywhere. Current zoo of "a", "s", "str"
 	// looks silly
 	if em := exactMatches(s, substr); em.Distance != -1 {

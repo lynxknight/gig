@@ -99,6 +99,14 @@ func TestGetScoreStrShorterThanTargetButMuchOverThreshold(t *testing.T) {
 	}
 }
 
+func TestGetScoreIsCaseInsensitive(t *testing.T) {
+	s1 := GetScore("abcd", "aBcDe")
+	s2 := GetScore("abcd", "abcde")
+	if s1 != s2 {
+		t.Errorf("\nHave (s1: %v; s2: %v; s1 != s2)\nWant: s1 == s2", s1, s2)
+	}
+}
+
 // In case of troubles with some test
 // func TestSpecificCase(t *testing.T) {
 // 	test := levTest{s1: "saturday", s2: "sunday", edistance: 3}
